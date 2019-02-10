@@ -7,7 +7,7 @@ import (
 
 func main() {
 	//utils.C = utils.NewPool().Get()
-	defer utils.C.Close()
+	defer utils.Conn.Close()
 
 	fmt.Printf("--- %v\n", utils.ExecuteCommand("EXPIRE", "test:string", 100)) // время жизни значения
 	fmt.Printf("--- %v\n", utils.ExecuteCommand("EXPIRE", "foo", 1))           // время жизни значения

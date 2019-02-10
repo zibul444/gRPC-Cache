@@ -8,8 +8,7 @@ import (
 
 func main() {
 	var config resources.Config
-	marshal := utils.ReadFileConfig("resources/config.yml")
-	config = utils.UnmarshalConfig(marshal)
+	config = utils.GetConfig("resources/config.yml")
 
 	fmt.Println(config)
 }
