@@ -74,6 +74,7 @@ func Execute(commandName string, args ...interface{}) string {
 		fmt.Println(err)
 	}
 	fmt.Printf("%s:%s\n", commandName, result)
+	//return result.(string)
 	return fmt.Sprintf("%s", result)
 }
 
