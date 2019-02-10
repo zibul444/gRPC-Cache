@@ -1,4 +1,5 @@
 //go:generate protoc -I ../description --go_out=plugins=grpc:../description ../description/descIDL.proto
+// ~/go/src % protoc --go_out=plugins=grpc:. gRPC-Cache/cacher/description/descIDL.proto
 
 package main
 
