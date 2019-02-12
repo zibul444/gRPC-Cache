@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"gRPC-Cache/resources"
-	"gRPC-Cache/utils"
+	"gRPC-Cache/cacher/resources"
+	"gRPC-Cache/cacher/utils"
 )
 
 func main() {
 	var config resources.Config
-	config = utils.GetConfig("resources/config.yml")
+	config = utils.GetConfig("cacher/resources/config.yml")
 
 	fmt.Println(config)
 }

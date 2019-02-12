@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"gRPC-Cache/cacher/utils"
 	"gopkg.in/yaml.v2"
-	"log"
 	"time"
 )
 
@@ -29,8 +29,6 @@ func main() {
 	t := T1{}
 
 	err := yaml.Unmarshal([]byte(data2), &t)
-	if err != nil {
-		log.Fatalf("error: %v", err)
-	}
+	utils.HandleError(err)
 	fmt.Printf("--- t:\n%v\n\n", t)
 }

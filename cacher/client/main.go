@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"gRPC-Cache/cacher/utils"
 	"log"
 	"time"
 
@@ -16,10 +17,8 @@ const (
 
 func main() {
 	conn, err := grpc.Dial(address, grpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	defer conn.Close()
+	utils.HandleError(err)
+	defer utils.HandleError(conn.Close())
 	client := pb.NewCacherClient(conn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -29,5 +28,5 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}
-	log.Printf("Greeting: %s", r.Data)
+	log.Printf("Received: %s", r.Data)
 }

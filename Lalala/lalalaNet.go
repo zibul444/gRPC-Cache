@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"gRPC-Cache/utils"
+	"gRPC-Cache/cacher/utils"
 
 	"net/http"
 	"strings"
@@ -17,11 +17,10 @@ var (
 func main() {
 	//c := make(chan string)
 
-	conf := utils.GetConfig("resources/config.yml")
+	conf := utils.GetConfig("cacher/resources/config.yml")
 	url = utils.GetRandomUrl(conf)
 	keys := utils.Execute("KEYS", "*")
 
-	// fixme говнище подчищаю чтоли....
 	strings.Replace(keys, "[", "", 1)
 	strings.Replace(keys, "]", "", 1)
 	keysSlise := strings.Split(keys, " ")
@@ -32,13 +31,10 @@ func main() {
 		}
 	}
 	resp, err := http.Get(url)
-	defer resp.Body.Close()
+	defer utils.HandleError(resp.Body.Close())
 
 	for {
-		if err != nil {
-			//fmt.Fprintf(os.Stderr, "fetch: %v\n", err)
-			panic(err)
-		}
+		utils.HandleError(err)
 		//s := fmt.Sprint(resp)
 		//fmt.Println(resp)
 		//fmt.Println(s[:100])

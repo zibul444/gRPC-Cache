@@ -2,13 +2,14 @@ package utils
 
 import (
 	"fmt"
-	"gRPC-Cache/resources"
+	"gRPC-Cache/cacher/resources"
 	"github.com/garyburd/redigo/redis"
 	"gopkg.in/yaml.v2"
 	"io"
 	"log"
 	"math/rand"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -28,65 +29,62 @@ func GetConfig(configPath string) (config resources.Config) {
 func ReadFileConfig(filePath string) (fileContents string) {
 	f, err := os.Open(filePath)
 	if err != nil {
-		log.Println(err.Error())
+		log.Fatalln(err.Error())
 		os.Exit(1)
 	}
-	defer f.Close()
+	defer HandleError(f.Close())
 	buf := make([]byte, 64)
 	for {
 		n, err := f.Read(buf)
 		if err == io.EOF { // если конец файла
 			break // выходим из цикла
 		}
-		//fmt.Print(string(data[:n]))
+		//log.Print(string(data[:n]))
 		fileContents += string(buf[:n])
 	}
-	fmt.Println("End Reading file config")
-	//fmt.Printf("Data from the file: \n%v", result)
+	log.Println("End Reading file config")
+	//log.Printf("Data from the file: \n%v", result)
 	return
 }
 
 // Десериализуем конфигурационный файл в объект resources.Config
 func UnmarshalConfig(marshal string) (config resources.Config) {
 	err := yaml.Unmarshal([]byte(marshal), &config)
-	if err != nil {
-		log.Printf("error: %v", err)
-	}
-	//fmt.Printf("\nconfig:\n%v\n", config)
-	fmt.Println("End Unmarshaling file config")
+	HandleError(err)
+	log.Println("End Unmarshaling file config")
 	return
 }
 
 // Для выполнения любых команд
 func ExecuteCommand(commandName string, args ...interface{}) interface{} {
 	result, err := Conn.Do(commandName, args...)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Printf("%s:%v\n", commandName, result)
+	HandleError(err)
+	//log.Printf("%s:%v\n", commandName, result)
 	return result
 }
 
 // Для выполнения команд "get string"
 func Execute(commandName string, args ...interface{}) string {
 	result, err := Conn.Do(commandName, args...)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Printf("%s:%s\n", commandName, result)
+	HandleError(err)
+	//log.Printf("%s:%s\n", commandName, result)
 	//return result.(string)
 	return fmt.Sprintf("%s", result)
 }
 
+func HandleError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 func NewPool() *redis.Pool {
 	return &redis.Pool{
-		MaxIdle:   80,
-		MaxActive: 12000, // max number of connections
+		MaxIdle:   1000,
+		MaxActive: 10000,
 		Dial: func() (redis.Conn, error) {
 			c, err := redis.Dial("tcp", ":6379")
-			if err != nil {
-				panic(err.Error())
-			}
+			HandleError(err)
 			return c, err
 		},
 	}
@@ -96,7 +94,6 @@ func NewPool() *redis.Pool {
 func GetRandom(min int, max int) (r int) {
 	max++
 	rand.Seed(time.Now().UnixNano())
-	//maxp := flag.Int("max", max-min, "the max value")
 
 	r = rand.Intn(max - min)
 	r += min
@@ -106,7 +103,7 @@ func GetRandom(min int, max int) (r int) {
 // Получаем случайный ресурс из config
 func GetRandomUrl(config resources.Config) (url string) {
 	min, max := 0, len(config.URLs)
-	max--
+	max-- // что бы не выйти за пределы доступных ресурсов конфига
 	r := GetRandom(min, max)
 
 	return config.URLs[r]
@@ -115,6 +112,17 @@ func GetRandomUrl(config resources.Config) (url string) {
 // Получаем случайное время жизни впределах указанных в config
 func GetRandomTimeLife(config resources.Config) (timeLife int) {
 	min, max := config.MinTimeout, config.MaxTimeout
-
+	GetListReadyKeys()
 	return GetRandom(min, max)
+}
+
+// Deprecated Получить список доступных ключей
+func GetListReadyKeys() (urls []string) {
+	keysRAW := Execute("KEYS", "*")
+	// fixme подумать как корректно преобразовывать из БД
+	//  (или разобраться почему база выдает не в том формате)
+	strings.Replace(keysRAW, "[", "", 1)
+	strings.Replace(keysRAW, "]", "", 1)
+	urls = strings.Split(keysRAW, " ")
+	return urls
 }

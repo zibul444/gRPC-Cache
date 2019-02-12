@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"gRPC-Cache/utils"
+	"gRPC-Cache/cacher/utils"
 )
 
 func main() {
 	//utils.C = utils.NewPool().Get()
-	defer utils.Conn.Close()
+	defer utils.HandleError(utils.Conn.Close())
 
 	//fmt.Printf("--- %v\n", utils.ExecuteCommand("EXPIRE", "test:string", 100)) // время жизни значения
 	fmt.Printf("--- %s\n", utils.ExecuteCommand("PING"))
