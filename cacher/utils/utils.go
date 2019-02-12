@@ -112,11 +112,10 @@ func GetRandomUrl(config resources.Config) (url string) {
 // Получаем случайное время жизни впределах указанных в config
 func GetRandomTimeLife(config resources.Config) (timeLife int) {
 	min, max := config.MinTimeout, config.MaxTimeout
-	GetListReadyKeys()
 	return GetRandom(min, max)
 }
 
-// Deprecated Получить список доступных ключей
+// Deprecated: Получить список доступных ключей
 func GetListReadyKeys() (urls []string) {
 	keysRAW := Execute("KEYS", "*")
 	// fixme подумать как корректно преобразовывать из БД
