@@ -4,14 +4,13 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	pb "gRPC-Cache/cacher/description"
-	"gRPC-Cache/cacher/resources"
 	"gRPC-Cache/cacher/utils"
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -25,42 +24,59 @@ const (
 var (
 	timeLife int
 	url      string
-
-	conf resources.Config
+	logger   = log.New(os.Stdout, fmt.Sprint(time.Now().Format(time.StampNano))+": ", log.Lshortfile)
+	conf     *utils.Config
+	ch       chan string
+	chReturn chan string
 )
 
 // описание используется для реализации description.serviceCacher
-type server struct{}
+type server struct {
+	reply []*string
+}
 
-func (s *server) GetRandomDataStream(ctx context.Context, in *pb.Request) (*pb.Reply, error) {
-	log.Println("Received")
-
+func init() {
 	conf = utils.GetConfig("cacher/resources/config.yml") // получаем конфиг
-	//utils.HandleError(err)
-	var data string
+	go conf.ReturnURL(chReturn)
+}
+
+func (s *server) GetRandomDataStream(reply *pb.Request, stream pb.Cacher_GetRandomDataStreamServer) error {
+	logger.Println("Received", reply)
+	defer func() { chReturn <- url }()
 	for i := 0; i < conf.NumberOfRequests; i++ {
-		url = utils.GetRandomUrl(conf)        // получаем случайный ресурс из конфига
-		keysRAW := utils.Execute("KEYS", "*") // получили доступные ключи
-
-		if strings.Contains(keysRAW, url) {
-			data = utils.Execute("GET", url) // получаем закешированные ресурсы
-			log.Println(data[:75])
-		} else {
-			resp, err := http.Get(url) // получаем данные
-			utils.HandleError(err)
-			defer utils.HandleError(resp.Body.Close()) // утилизируем ресурсы
-
-			data = fmt.Sprint(resp)
-			log.Println(data[:40])
-
-			timeLife = utils.GetRandomTimeLife(conf)           //  получили случаейное время жизни в пределах заданных в конфиге
-			utils.ExecuteCommand("SETEX", url, timeLife, resp) // положили данные в БД указали время жизни кэша
-
-			time.Sleep(100 * time.Millisecond) // fixme удалить
-		}
+		handle(stream) // fixme server go!!!
+		logger.Println("End")
 	}
 
-	return &pb.Reply{Data: data}, nil // fixme пока отдает последний результат
+	return nil
+}
+
+func handle(stream pb.Cacher_GetRandomDataStreamServer) {
+	var data string // обьявили ответ
+
+	go conf.TakeURL(ch) // получаем случайный ресурс из конфига
+	url = <-ch
+
+	keysRAW := utils.Execute("KEYS", "*") // получили доступные кэши
+
+	if strings.Contains(keysRAW, url) {
+		data = utils.Execute("GET", url) // получаем закешированные ресурсы
+		logger.Println("BD:", url, data[:75])
+	} else {
+		resp, err := http.Get(url) // получаем данные
+		utils.HandleError(err)
+
+		data = fmt.Sprint(resp) // преобразовали данные
+		logger.Println("TCP:", url, data[:40])
+
+		timeLife = utils.GetRandomTimeLife(*conf)          //  получили случаейное время жизни в пределах заданных в конфиге
+		utils.ExecuteCommand("SETEX", url, timeLife, resp) // положили данные в БД указали время жизни кэша
+
+		resp.Body.Close() // утилизируем ресурсы
+	}
+	err := stream.Send(&pb.Reply{Data: data})
+	time.Sleep(time.Millisecond * 400) // fixme удалить, ожидание для наглядного вывода
+	utils.HandleError(err)
 }
 
 func main() {
@@ -69,8 +85,9 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterCacherServer(grpcServer, &server{})
-	log.Println("Register CacherServer success! matherHucker")
+	logger.Println("Register CacherServer success! matherHucker")
 	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		logger.Fatalf("failed to serve: %v", err)
+		panic(err)
 	}
 }
