@@ -1,12 +1,13 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"math/rand"
 	"os"
-	"sync"
+	"strconv"
 	"time"
 
 	"github.com/garyburd/redigo/redis"
@@ -16,8 +17,6 @@ import (
 var (
 	Conn   = NewPool().Get()
 	logger = log.New(os.Stdout, fmt.Sprint(time.Now().Format(time.StampNano))+": ", log.Lshortfile)
-	//urls   []string
-	mutex = new(sync.Mutex)
 )
 
 // Читаем файл по имени
@@ -106,3 +105,85 @@ func GetRandomTimeLife(config Config) (timeLife int) {
 //	stdLogger = log.New(os.Stdout, fmt.Sprint(time.Now().Format(time.StampNano)) + " INFO: ", log.Lshortfile)
 //	return stdLogger
 //}
+
+// ToInt64 converts interface{} to int64
+func ToInt64(i1 interface{}) int64 {
+	if i1 == nil {
+		return 0
+	}
+	switch i2 := i1.(type) {
+	default:
+		i3, _ := strconv.ParseInt(ToString(i2), 10, 64)
+		return i3
+	case *json.Number:
+		i3, _ := i2.Int64()
+		return i3
+	case json.Number:
+		i3, _ := i2.Int64()
+		return i3
+	case int64:
+		return i2
+	case float64:
+		return int64(i2)
+	case float32:
+		return int64(i2)
+	case uint64:
+		return int64(i2)
+	case int:
+		return int64(i2)
+	case uint:
+		return int64(i2)
+	case bool:
+		if i2 {
+			return 1
+		} else {
+			return 0
+		}
+	case *bool:
+		if i2 == nil {
+			return 0
+		}
+		if *i2 {
+			return 1
+		} else {
+			return 0
+		}
+	}
+}
+
+// ToString converts interface{} to string
+func ToString(i1 interface{}) string {
+	if i1 == nil {
+		return ""
+	}
+	switch i2 := i1.(type) {
+	default:
+		return fmt.Sprint(i2)
+	case bool:
+		if i2 {
+			return "true"
+		} else {
+			return "false"
+		}
+	case string:
+		return i2
+	case *bool:
+		if i2 == nil {
+			return ""
+		}
+		if *i2 {
+			return "true"
+		} else {
+			return "false"
+		}
+	case *string:
+		if i2 == nil {
+			return ""
+		}
+		return *i2
+	case *json.Number:
+		return i2.String()
+	case json.Number:
+		return i2.String()
+	}
+}

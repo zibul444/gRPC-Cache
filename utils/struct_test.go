@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"log"
 	"regexp"
 	"sync"
 	"testing"
@@ -9,16 +8,16 @@ import (
 )
 
 var (
-	config  = GetConfig("../resources/config.yml")
-	ch      = make(chan string)
-	lengthy = len(config.URLs)
+	config = GetConfig("../config.yml")
+	ch     = make(chan string)
+	length = config.LenURLs()
 	//wgTest  = sync.WaitGroup{}
 	buf []string
 )
 
 func TestGetConfig(t *testing.T) {
 	if len(config.URLs) <= 0 {
-		t.Fatal()
+		t.Fatal(len(config.URLs))
 	} else if config.MinTimeout < 0 {
 		t.Fatal()
 	} else if config.MinTimeout > config.MaxTimeout {
@@ -37,7 +36,7 @@ func TestGetConfig(t *testing.T) {
 }
 
 func TestConfig_TakeURL(t *testing.T) {
-	log.Println("Start TestConfig_TakeURL")
+	logger.Println("Start TestConfig_TakeURL")
 	n := 5
 	wgTest := sync.WaitGroup{}
 
@@ -46,7 +45,7 @@ func TestConfig_TakeURL(t *testing.T) {
 	for i := 0; i < n; i++ {
 		wgTest.Add(1)
 		go func(number int) {
-			log.Println(number, "go func start")
+			logger.Println(number, "go func start")
 			for len(config.URLs) > 0 {
 				mu.Lock()
 				go config.TakeURL(ch) //, number)
@@ -58,31 +57,24 @@ func TestConfig_TakeURL(t *testing.T) {
 		}(i)
 	}
 
-	log.Println("go func is run")
+	logger.Println("go func is run")
 	go func() {
-		log.Println("Starting reading chan")
+		logger.Println("Starting reading chan")
 		for url := range ch {
-			log.Println("url", url)
+			logger.Println("url", url)
 			buf = append(buf, url)
 		}
 	}()
 
-	log.Println("wgTest.Wait()")
+	logger.Println("wgTest.Wait()")
 	wgTest.Wait()
-	log.Println("wgTest.Wait() - ended")
+	logger.Println("wgTest.Wait() - ended")
 	if len(config.URLs) != 0 {
 		t.Fatal("len", len(config.URLs))
 	}
-	if len(buf) != lengthy {
+	if len(buf) != length {
 		t.Fatal(len(config.URLs))
 	}
-	log.Println("Source:", config.URLs)
-	log.Println("Dest::", buf)
+	logger.Println("Source:", config.URLs)
+	logger.Println("Dest:", buf)
 }
-
-//func TestConfig_ReturnURL(t *testing.T) {
-//	/*for i := 0; ; {
-//
-//	}*/
-//	t.Skip()
-//}

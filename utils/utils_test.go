@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -39,9 +41,9 @@ func TestGetRandom(t *testing.T) {
 func TestExecuteCommand(t *testing.T) {
 	//defer Conn.Close()
 
-	//fmt.Printf("--- %v\n", utils.ExecuteCommand("EXPIRE", "test:string", 100)) // время жизни значения
+	//fmt.Printf("--- %v\n", utils.ExecuteCommand("EXPIRE", "test:string", 100))
 	t.Logf("--- %s\n", ExecuteCommand("PING"))
-	t.Logf("--- %v\n", ExecuteCommand("EXPIRE", "foo", 100)) // время жизни значения
+	t.Logf("--- %v\n", ExecuteCommand("EXPIRE", "foo", 100))
 
 	t.Logf("--- %d\n", ExecuteCommand("APPEND", "foo", " v"))
 	//t.Logf("--- %s\n", ExecuteCommand("GET", "foo"))
@@ -49,5 +51,17 @@ func TestExecuteCommand(t *testing.T) {
 
 	t.Logf("--- %s\n", ExecuteCommand("SET", "foo", "c"))
 	t.Logf("--- %s\n", Execute("GET", "foo"))
-	t.Logf("--- %v\n", ExecuteCommand("TTL", "foo"))
+	TTL := ExecuteCommand("TTL", "foo")
+	//i := interface{}(TTL)
+	ty := reflect.TypeOf(TTL).Name()
+	t.Logf("--- TTL %v, %v\n", TTL, ty)
+}
+func TestExecute(t *testing.T) {
+	test := "TestLiter"
+	t.Logf("--- %s\n", ExecuteCommand("SETEX", "foo", 10, test))
+	dest := Execute("GET", "foo")
+
+	if !strings.EqualFold(test, dest) {
+		t.Fatal("dest:", dest)
+	}
 }
