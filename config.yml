@@ -1,13 +1,19 @@
 URLs:
-  - https://golang.org
-  - https://www.google.com
-  - https://www.bbc.co.uk
-  - https://www.github.com
-  - https://www.gitlab.com
-  - https://www.duckduckgo.com
-  - https://www.atlassian.com
-  - https://www.twitter.com
-  - https://www.facebook.com
+  - https://www.microsoft.com
+  - https://juliadates.com
+  - https://www.nato.int
+  - http://discovery-romance.com
+  - http://gitarre.ru
+  - https://www.ed.gov
+  - https://partner.edarling.ru
+  - https://minjust.ru
+  - https://partner.edarling.ru
+  - https://www.rosminzdrav.ru
+  - http://www.mkrf.ru
+  - https://www.mos.ru
+  - http://pereborom.ru
+  - http://www.calorizator.ru
+  - https://black-star.ru
 MinTimeout: 10
 MaxTimeout: 100
-NumberOfRequests: 3
+NumberOfRequests: 10

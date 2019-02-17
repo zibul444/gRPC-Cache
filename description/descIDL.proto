@@ -6,8 +6,13 @@ service Cacher {
   rpc GetRandomDataStream(Request) returns (stream Reply) {}
 }
 
+service Consumer {
+  rpc CacherRunner(Request) returns (stream Reply) {}
+}
+
 // Пока такая заглушка, для передачи "без параметров" - нужно найти реализацию =)
 message Request {
+    int32 N = 1;
 }
 
 message Reply {

@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"fmt"
+	"net/http"
 	"regexp"
 	"sync"
 	"testing"
@@ -33,6 +35,13 @@ func TestGetConfig(t *testing.T) {
 			t.Fatal()
 		}
 	}
+
+	instance2 := GetConfig("../config.yml")
+
+	if config != instance2 {
+		t.Fatal("Objects are not equal!\n")
+	}
+
 }
 
 func TestConfig_TakeURL(t *testing.T) {
@@ -45,7 +54,7 @@ func TestConfig_TakeURL(t *testing.T) {
 	for i := 0; i < n; i++ {
 		wgTest.Add(1)
 		go func(number int) {
-			logger.Println(number, "go func start")
+			logger.Println(number, "go func starting")
 			for len(config.URLs) > 0 {
 				mu.Lock()
 				go config.TakeURL(ch) //, number)
@@ -77,4 +86,14 @@ func TestConfig_TakeURL(t *testing.T) {
 	}
 	logger.Println("Source:", config.URLs)
 	logger.Println("Dest:", buf)
+}
+
+func TestCheckAvailabilityResources(t *testing.T) {
+	var data string
+	for _, resource := range config.URLs {
+		resp, err := http.Get(resource)
+		HandleError(err)
+		data = fmt.Sprint(resp)
+		logger.Println(resource, " - ", len(data), " - ", data[:len(data)/20])
+	}
 }

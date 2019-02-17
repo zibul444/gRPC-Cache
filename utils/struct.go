@@ -2,9 +2,14 @@ package utils
 
 import (
 	"sync"
+	"time"
 )
 
-var muConfig = new(sync.Mutex)
+var (
+	instance *Config
+	once     sync.Once
+	muConfig = new(sync.Mutex)
+)
 
 //URLs можно было контроллировать иным способом, чуть менее брутФорс,
 // превратив URLs в структуру типа - Значение string:ЯвляетьсяЛиЗанятым bool.
@@ -15,17 +20,25 @@ type Config struct {
 	MinTimeout       int      `yaml:"MinTimeout"`
 	MaxTimeout       int      `yaml:"MaxTimeout"`
 	NumberOfRequests int      `yaml:"NumberOfRequests"`
+
+	chReturnUrls chan string
+	chGetUrls    chan string
 }
 
+//func init() {
+//	chReturnUrls = make(chan string)
+//	chGetUrls = make(chan string)
+//}
+
 func (c *Config) TakeURL(chanel chan<- string) { //, name ...int) {
-	//logger.Println("TakeURL", "1")
+	logger.Println("TakeURL", "1")
 
 	muConfig.Lock()
-	//logger.Println("TakeURL", "2")
+	logger.Println("TakeURL", "2")
 	defer muConfig.Unlock()
 	//logger.Println("TakeURL", "3")
 	var url string
-	logger.Println("TakeURL", "4", c.LenURLs())
+	//logger.Println("TakeURL", "4", c.LenURLs())
 	for {
 		//logger.Println("TakeURL", "5")
 		if len(c.URLs) > 0 {
@@ -35,30 +48,38 @@ func (c *Config) TakeURL(chanel chan<- string) { //, name ...int) {
 			url = c.URLs[r]
 			//logger.Println("TakeURL", "8")
 			c.URLs = append(c.URLs[0:r], c.URLs[r+1:]...)
-			//logger.Println("TakeURL", "9")
+			logger.Println("TakeURL", "9")
 			break
+		} else {
+			time.Sleep(time.Second)
+			logger.Println("TakeURL Sleep")
 		}
 		//logger.Println("TakeURL", "10")
 	}
-	//logger.Println("TakeURL", "11")
+	logger.Println("TakeURL", "11")
 	//debug.PrintStack()
 	chanel <- url
-	//logger.Println("TakeURL", "12")
+	logger.Println("TakeURL", "12")
 }
 
 // поднимаеться и работает как goroutine
 func (c *Config) ReturnURL(returnCh <-chan string) {
-	mu := sync.Mutex{}
+	//mu := sync.Mutex{}
 	for {
-		mu.Lock()
-		c.URLs = append(c.URLs, <-returnCh) // fixme Может быть ошибка при одновременном извлечении данных  методом TakeURL()
-		mu.Unlock()
+		logger.Println("ReturnURL")
+		//mu.Lock()
+		c.URLs = append(c.URLs, <-returnCh)
+		//mu.Unlock()
+		time.Sleep(time.Second)
 	}
 }
 
 func GetConfig(configPath string) (config *Config) {
-	configString := ReadFileConfig(configPath)
-	return UnmarshalConfig(configString)
+	once.Do(func() {
+		configString := ReadFileConfig(configPath)
+		instance = unmarshalConfig(configString)
+	})
+	return instance
 }
 
 func (c *Config) LenURLs() (lenURLs int) {

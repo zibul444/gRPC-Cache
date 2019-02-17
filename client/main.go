@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"sync"
 	"time"
 
 	pb "gRPC-Cache/description"
@@ -16,13 +17,14 @@ import (
 
 const (
 	address = "localhost:9999"
-	max     = 100
+	max     = 2
 )
 
 var (
-	logger  = log.New(os.Stdout, fmt.Sprint(time.Now().Format(time.StampNano))+" : ", log.Lshortfile)
-	ch      = make(chan string, max) //fixme ??????max
-	counter = 0
+	logger     = log.New(os.Stdout, fmt.Sprint(time.Now().Format(time.StampNano))+" : ", log.Lshortfile)
+	ch         = make(chan string, 2)
+	counter    = 0
+	wgConsumer = sync.WaitGroup{}
 )
 
 func main() {
@@ -36,16 +38,17 @@ func main() {
 
 	client := pb.NewCacherClient(conn)
 
+	wgConsumer.Add(max)
 	for i := 0; i < max; i++ {
-		func(client pb.CacherClient, request *pb.Request) {
+		go func(client pb.CacherClient, request *pb.Request) {
+			defer wgConsumer.Done()
 			logger.Println("Request started")
-			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
 			stream, err := client.GetRandomDataStream(ctx, request)
 			utils.HandleError(err)
 			for {
 				reply, err := stream.Recv()
-				//_, err := stream.Recv()
 				if err == io.EOF {
 					break
 				}
@@ -53,15 +56,25 @@ func main() {
 				logger.Println(reply.Data[:len(reply.Data)/20]) // fixme никуда не выводить
 			}
 			counter++
-
-			ch <- "End" + fmt.Sprint(counter)
-		}(client, &pb.Request{})
+			//wgConsumer.Done()
+			ch <- "End: " + fmt.Sprint(counter)
+		}(client, &pb.Request{N: int32(i)})
+		logger.Println("End For:", i)
 	}
-	//handleResponse(client, &pb.Request{})
-	//go printer()
+	logger.Println("For is end")
 
-	if counter == max {
-		logger.Println("Client ended")
+	go printerRoutine()
+	logger.Println("wgConsumer")
+	wgConsumer.Wait()
+	logger.Println("wgConsumer.Done")
+	err = conn.Close()
+	utils.HandleError(err)
+
+}
+
+func printerRoutine() {
+	for w := range ch {
+		logger.Println(w)
 	}
 }
 

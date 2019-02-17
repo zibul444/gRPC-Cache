@@ -3,6 +3,12 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/garyburd/redigo/redis"
+	"sync"
+
+	//"github.com/garyburd/redigo/redis"
+
+	//"github.com/garyburd/redigo/redis"
 	"io"
 	"log"
 	"math/rand"
@@ -10,13 +16,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/garyburd/redigo/redis"
 	"gopkg.in/yaml.v2"
 )
 
 var (
-	Conn   = NewPool().Get()
-	logger = log.New(os.Stdout, fmt.Sprint(time.Now().Format(time.StampNano))+": ", log.Lshortfile)
+	Conn    = NewPool().Get()
+	logger  = log.New(os.Stdout, fmt.Sprint(time.Now().Format(time.StampNano))+": ", log.Lshortfile)
+	muUtils = sync.Mutex{}
 )
 
 // Читаем файл по имени
@@ -42,7 +48,7 @@ func ReadFileConfig(filePath string) (fileContents string) {
 }
 
 // Десериализуем конфигурационный файл в объект resources.Config
-func UnmarshalConfig(marshal string) (config *Config) {
+func unmarshalConfig(marshal string) (config *Config) {
 	err := yaml.Unmarshal([]byte(marshal), &config)
 	HandleError(err)
 	logger.Println("Конфиг жив(анмаршалинг завершен)")
@@ -51,26 +57,46 @@ func UnmarshalConfig(marshal string) (config *Config) {
 
 // Для выполнения любых команд
 func ExecuteCommand(commandName string, args ...interface{}) interface{} {
-	//mutex.Lock()
-	//defer mutex.Unlock()
+	muUtils.Lock()
+	defer muUtils.Unlock()
+	//logger.Printf("1 %s:%v\n", commandName, args)
 	result, err := Conn.Do(commandName, args...)
+	//logger.Printf("2 %s:%v\n", commandName, result)
+
+	//if err == io.ErrShortWrite { //fixme
+	//	Conn = NewPool().Get()
+	//	logger.Println("Error", err)
+	//	err = nil
+	//	ExecuteCommand(commandName, args)
+	//}
 	HandleError(err)
-	//logger.Printf("%s:%v\n", commandName, result)
 	return result
 }
 
 // Для выполнения команд "get string"
 func Execute(commandName string, args ...interface{}) string {
-	//mutex.Lock()
-	//defer mutex.Unlock()
+	muUtils.Lock()
+	defer muUtils.Unlock()
 	result, err := Conn.Do(commandName, args...)
+	//logger.Println(fmt.Sprintf("Execute: %s", result))
+
+	//if err == io.ErrShortWrite { //fixme
+	//	Conn = NewPool().Get()
+	//	logger.Println("Error", err)
+	//	err = nil
+	//	Execute(commandName, args)
+	//}
 	HandleError(err)
 	return fmt.Sprintf("%s", result)
 }
 
 func HandleError(err error) {
 	if err != nil {
+		//logger.Print(err)
 		panic(err)
+		//debug.PrintStack()
+
+		//wgTest.Done()
 	}
 }
 
@@ -106,7 +132,6 @@ func GetRandomTimeLife(config Config) (timeLife int) {
 //	return stdLogger
 //}
 
-// ToInt64 converts interface{} to int64
 func ToInt64(i1 interface{}) int64 {
 	if i1 == nil {
 		return 0
@@ -151,7 +176,6 @@ func ToInt64(i1 interface{}) int64 {
 	}
 }
 
-// ToString converts interface{} to string
 func ToString(i1 interface{}) string {
 	if i1 == nil {
 		return ""
