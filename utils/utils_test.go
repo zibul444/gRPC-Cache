@@ -9,7 +9,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 )
 
 func TestGetRandom(t *testing.T) {
@@ -45,7 +44,7 @@ func TestGetRandom(t *testing.T) {
 
 func TestExecuteCommand(t *testing.T) {
 
-	//defer Conn.Close()
+	//defer dbConn.Close()
 
 	//fmt.Printf("--- %v\n", utils.ExecuteCommand("EXPIRE", "test:string", 100))
 	t.Logf("--- %s\n", ExecuteCommand("PING"))
@@ -88,47 +87,41 @@ func TestExecuteCommand2(t *testing.T) {
 	// Create Http Client
 	client := &http.Client{Transport: transCfg}
 
-	wgTest := sync.WaitGroup{}
-	for i := 0; i < 1000; i++ {
+	var wgTest sync.WaitGroup
+	for i := 0; i < 20; i++ {
 		wgTest.Add(1)
 		go func() {
 			for _, url := range URLs {
-				if time.Now().Second()%2 == 0 {
-					// Request
-					response, err := client.Get(url)
-					// Check Error
-					HandleError(err)
-					// Close After Read Body
-					// Read Body
-					data, err := ioutil.ReadAll(response.Body)
-					// Check Error
-					HandleError(err)
-					// Print response html : conver byte to string
-					//fmt.Println(string(data))
+				//if time.Now().Second()%2 == 0 {
+				// Request
+				response, err := client.Get(url)
+				// Check Error
+				HandleError(err)
+				// Close After Read Body
+				// Read Body
+				data, err := ioutil.ReadAll(response.Body)
+				// Check Error
+				HandleError(err)
+				// Print response html : conver byte to string
+				//fmt.Println(string(data))
 
-					//data, err := http.Get(url)
-					//HandleError(err)
-					ExecuteCommand("setex", url, 50, fmt.Sprint(data))
-					response.Body.Close()
-				}
+				//data, err := http.Get(url)
+				//HandleError(err)
+				ExecuteCommand("setex", url, 50, fmt.Sprint(data))
+				response.Body.Close()
+				//}
 			}
 			wgTest.Done()
 		}()
-		//go func() {
-		//	for _, url := range URLs {
-		//
-		//		data, err := http.Get(url)
-		//		HandleError(err)
-		//		logger.Println(ExecuteCommand("setex", url, 50, fmt.Sprint(data)))
-		//	}
-		//	wgTest.Done()
-		//}()
 	}
 
 	wgTest.Wait()
 
-	keys := Execute("KEYS", "*")
+	for i, url := range URLs {
+		logger.Println(i, ExecuteCommand("TTL", url), url)
+	}
 
+	keys := Execute("KEYS", "*")
 	logger.Println("Contains keys :", keys)
 }
 
@@ -154,4 +147,13 @@ func TestExecute(t *testing.T) {
 		t.Fatal("dest:", dest)
 	}
 
+}
+
+func TestHTTPGet(t *testing.T) {
+	for {
+		recp, err := http.Get("http://localhost:8000/l")
+		HandleError(err)
+
+		logger.Printf("%v", recp)
+	}
 }

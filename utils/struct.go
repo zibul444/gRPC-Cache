@@ -8,7 +8,7 @@ import (
 var (
 	instance *Config
 	once     sync.Once
-	muConfig = new(sync.Mutex)
+	//muConfig = new(sync.Mutex)
 )
 
 //URLs можно было контроллировать иным способом, чуть менее брутФорс,
@@ -21,56 +21,60 @@ type Config struct {
 	MaxTimeout       int      `yaml:"MaxTimeout"`
 	NumberOfRequests int      `yaml:"NumberOfRequests"`
 
-	chReturnUrls chan string
-	chGetUrls    chan string
+	ChReturnUrls chan string
+	ChGetUrls    chan string
 }
 
 //func init() {
-//	chReturnUrls = make(chan string)
-//	chGetUrls = make(chan string)
+//	ChReturnUrls = make(chan string)
+//	ChGetUrls = make(chan string)
 //}
 
-func (c *Config) TakeURL(chanel chan<- string) { //, name ...int) {
-	logger.Println("TakeURL", "1")
+func (c *Config) takeURL() { //, name ...int) {
+	//logger.Println("takeURL", "1")
 
-	muConfig.Lock()
-	logger.Println("TakeURL", "2")
-	defer muConfig.Unlock()
-	//logger.Println("TakeURL", "3")
-	var url string
-	//logger.Println("TakeURL", "4", c.LenURLs())
 	for {
-		//logger.Println("TakeURL", "5")
-		if len(c.URLs) > 0 {
-			//logger.Println("TakeURL", "6")
-			r := GetRandom(0, len(c.URLs))
-			//logger.Println("TakeURL", "7")
-			url = c.URLs[r]
-			//logger.Println("TakeURL", "8")
-			c.URLs = append(c.URLs[0:r], c.URLs[r+1:]...)
-			logger.Println("TakeURL", "9")
-			break
-		} else {
-			time.Sleep(time.Second)
-			logger.Println("TakeURL Sleep")
+		//muConfig.Lock()
+		//logger.Println("takeURL", "2")
+		//defer muConfig.Unlock()
+		//logger.Println("takeURL", "3")
+		var url string
+		//logger.Println("takeURL", "4", c.LenURLs())
+		for {
+			//logger.Println("takeURL", "5")
+			if len(c.URLs) > 0 {
+				//logger.Println("takeURL", "6")
+				r := GetRandom(0, len(c.URLs))
+				//logger.Println("takeURL", "7")
+				url = c.URLs[r]
+				//logger.Println("takeURL", "8")
+				c.URLs = append(c.URLs[0:r], c.URLs[r+1:]...)
+				//logger.Println("takeURL", "9")
+				break
+			} else {
+				time.Sleep(time.Second)
+				logger.Println("takeURL Sleep")
+			}
+			//logger.Println("takeURL", "10")
 		}
-		//logger.Println("TakeURL", "10")
+		//logger.Println("takeURL", "11")
+		//debug.PrintStack()
+		c.ChGetUrls <- url
+		//logger.Println("takeURL", "12")
 	}
-	logger.Println("TakeURL", "11")
-	//debug.PrintStack()
-	chanel <- url
-	logger.Println("TakeURL", "12")
 }
 
 // поднимаеться и работает как goroutine
-func (c *Config) ReturnURL(returnCh <-chan string) {
+//func (c *Config) ReturnURL(returnCh <-chan string) {
+func (c *Config) returnURL() {
 	//mu := sync.Mutex{}
 	for {
 		logger.Println("ReturnURL")
 		//mu.Lock()
-		c.URLs = append(c.URLs, <-returnCh)
+		//c.URLs = append(c.URLs, <-returnCh)
+		c.URLs = append(c.URLs, <-instance.ChReturnUrls)
 		//mu.Unlock()
-		time.Sleep(time.Second)
+		time.Sleep(500 * time.Millisecond)
 	}
 }
 
@@ -78,6 +82,11 @@ func GetConfig(configPath string) (config *Config) {
 	once.Do(func() {
 		configString := ReadFileConfig(configPath)
 		instance = unmarshalConfig(configString)
+
+		instance.ChReturnUrls = make(chan string)
+		instance.ChGetUrls = make(chan string)
+		go instance.takeURL()
+		go instance.returnURL()
 	})
 	return instance
 }

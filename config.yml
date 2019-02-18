@@ -1,19 +1,25 @@
 URLs:
-  - https://www.microsoft.com
-  - https://juliadates.com
-  - https://www.nato.int
-  - http://discovery-romance.com
-  - http://gitarre.ru
-  - https://www.ed.gov
-  - https://partner.edarling.ru
-  - https://minjust.ru
-  - https://partner.edarling.ru
-  - https://www.rosminzdrav.ru
-  - http://www.mkrf.ru
-  - https://www.mos.ru
-  - http://pereborom.ru
-  - http://www.calorizator.ru
-  - https://black-star.ru
+  - http://localhost:8000/l
+  - http://localhost:8800/
+  - http://localhost:6000/l
+  - http://localhost:8000/l
+  - http://localhost:8800/
+  - http://localhost:6000/l
+  - http://localhost:8000/l
+  - http://localhost:8800/
+  - http://localhost:6000/l
+  - http://localhost:8000/l
+  - http://localhost:8800/
+  - http://localhost:6000/l
+  - http://localhost:8000/l
+  - http://localhost:8800/
+  - http://localhost:6000/l
+  - http://localhost:8000/l
+  - http://localhost:8800/
+  - http://localhost:6000/l
+  - http://localhost:8000/l
+  - http://localhost:8800/
+  - http://localhost:6000/l
 MinTimeout: 10
 MaxTimeout: 100
-NumberOfRequests: 10
+NumberOfRequests: 3

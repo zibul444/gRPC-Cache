@@ -17,14 +17,14 @@ import (
 
 const (
 	address = "localhost:9999"
-	max     = 2
+	max     = 1000
 )
 
 var (
 	logger     = log.New(os.Stdout, fmt.Sprint(time.Now().Format(time.StampNano))+" : ", log.Lshortfile)
 	ch         = make(chan string, 2)
 	counter    = 0
-	wgConsumer = sync.WaitGroup{}
+	wgConsumer sync.WaitGroup
 )
 
 func main() {
@@ -43,7 +43,8 @@ func main() {
 		go func(client pb.CacherClient, request *pb.Request) {
 			defer wgConsumer.Done()
 			logger.Println("Request started")
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			//ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 			defer cancel()
 			stream, err := client.GetRandomDataStream(ctx, request)
 			utils.HandleError(err)
@@ -53,12 +54,14 @@ func main() {
 					break
 				}
 				utils.HandleError(err)
-				logger.Println(reply.Data[:len(reply.Data)/20]) // fixme никуда не выводить
+				logger.Println(i, reply.Data[:len(reply.Data)/20]) // fixme никуда не выводить
 			}
 			counter++
 			//wgConsumer.Done()
 			ch <- "End: " + fmt.Sprint(counter)
+			time.Sleep(250 * time.Millisecond)
 		}(client, &pb.Request{N: int32(i)})
+
 		logger.Println("End For:", i)
 	}
 	logger.Println("For is end")
@@ -77,8 +80,6 @@ func printerRoutine() {
 		logger.Println(w)
 	}
 }
-
-// handleResponse lists all the features within the given bounding Rectangle.
 
 //func printer() {
 //	for {

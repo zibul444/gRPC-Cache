@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	Conn    = NewPool().Get()
+	dbConn  = NewPool().Get()
 	logger  = log.New(os.Stdout, fmt.Sprint(time.Now().Format(time.StampNano))+": ", log.Lshortfile)
 	muUtils = sync.Mutex{}
 )
@@ -43,7 +43,7 @@ func ReadFileConfig(filePath string) (fileContents string) {
 		fileContents += string(buf[:n])
 	}
 
-	logger.Println("Чтение конфига завершено")
+	//logger.Println("Чтение конфига завершено")
 	return
 }
 
@@ -51,52 +51,36 @@ func ReadFileConfig(filePath string) (fileContents string) {
 func unmarshalConfig(marshal string) (config *Config) {
 	err := yaml.Unmarshal([]byte(marshal), &config)
 	HandleError(err)
-	logger.Println("Конфиг жив(анмаршалинг завершен)")
+	//logger.Println("Конфиг жив(анмаршалинг завершен)")
 	return
 }
 
 // Для выполнения любых команд
 func ExecuteCommand(commandName string, args ...interface{}) interface{} {
-	muUtils.Lock()
-	defer muUtils.Unlock()
+	//muUtils.Lock()
+	//defer muUtils.Unlock()
 	//logger.Printf("1 %s:%v\n", commandName, args)
-	result, err := Conn.Do(commandName, args...)
+	result, err := dbConn.Do(commandName, args...)
 	//logger.Printf("2 %s:%v\n", commandName, result)
 
-	//if err == io.ErrShortWrite { //fixme
-	//	Conn = NewPool().Get()
-	//	logger.Println("Error", err)
-	//	err = nil
-	//	ExecuteCommand(commandName, args)
-	//}
 	HandleError(err)
 	return result
 }
 
 // Для выполнения команд "get string"
 func Execute(commandName string, args ...interface{}) string {
-	muUtils.Lock()
-	defer muUtils.Unlock()
-	result, err := Conn.Do(commandName, args...)
+	//muUtils.Lock()
+	//defer muUtils.Unlock()
+	result, err := dbConn.Do(commandName, args...)
 	//logger.Println(fmt.Sprintf("Execute: %s", result))
 
-	//if err == io.ErrShortWrite { //fixme
-	//	Conn = NewPool().Get()
-	//	logger.Println("Error", err)
-	//	err = nil
-	//	Execute(commandName, args)
-	//}
 	HandleError(err)
 	return fmt.Sprintf("%s", result)
 }
 
 func HandleError(err error) {
 	if err != nil {
-		//logger.Print(err)
 		panic(err)
-		//debug.PrintStack()
-
-		//wgTest.Done()
 	}
 }
 

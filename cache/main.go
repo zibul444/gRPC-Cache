@@ -26,13 +26,12 @@ var (
 	conf   *utils.Config
 
 	chReturnUrls = make(chan string)
-	//
-	chUrl  = make(chan string)
-	chData = make(chan string)
-	url    string
-	data   string
-	//wg1    = sync.WaitGroup{}
-	waitGroup = sync.WaitGroup{}
+
+	chUrl     = make(chan string) //FIXME wef
+	chData    = make(chan string)
+	url       string
+	data      string
+	waitGroup sync.WaitGroup
 )
 
 // описание используется для реализации description.serviceCacher
@@ -42,7 +41,9 @@ type server struct {
 
 func init() {
 	conf = utils.GetConfig("config.yml") // получаем конфиг
-	go conf.ReturnURL(chReturnUrls)
+	//go conf.ReturnURL(chReturnUrls)
+	chUrl = conf.ChGetUrls
+	chReturnUrls = conf.ChReturnUrls
 }
 
 func (s *server) GetRandomDataStream(reply *pb.Request, stream pb.Cacher_GetRandomDataStreamServer) error {
@@ -54,18 +55,20 @@ func (s *server) GetRandomDataStream(reply *pb.Request, stream pb.Cacher_GetRand
 		//wg1.Add(1)
 		go func(ch chan<- string, recNum int32, num int) {
 
-			go conf.TakeURL(chUrl)
+			//go conf.takeURL(chUrl) //fixme
 
+			//logger.Println(recNum, num, "url = <-chUrl start")
 			url = <-chUrl
+			//logger.Println(recNum, num, "url = <-chUrl received")
 
 			keys := utils.Execute("KEYS", "*")
 
 			ok := strings.Contains(keys, url)
-			logger.Println("Contains keys is :", ok, ":", keys)
+			//logger.Println("Contains keys is :", ok, ":", keys)
 
 			if ok {
-				ttl := utils.ToInt64(utils.Execute("TTL", url))
-				logger.Println(recNum, num, "-14 Узнали срок годности КЭШа:", ttl)
+				ttl := utils.ToInt64(utils.ExecuteCommand("TTL", url))
+				//logger.Println(recNum, num, "-14 Узнали срок годности КЭШа:", ttl)
 				if ttl < 2 {
 					ok = !ok
 					logger.Println(recNum, num, "-14.1 Не успеваем взять КЭШ, keys is:", ok)
@@ -73,46 +76,44 @@ func (s *server) GetRandomDataStream(reply *pb.Request, stream pb.Cacher_GetRand
 			}
 
 			if ok {
-				logger.Println(recNum, num, "-14.2 Ключь найден в БД, забросим в ch <-")
+				//logger.Println(recNum, num, "-14.2 Ключь найден в БД, забросим в ch <-")
 				ch <- utils.Execute("GET", url) // получаем закешированные ресурсы
-				logger.Println("-BD:", url, data[:len(data)/10])
-				logger.Println(recNum, num, "-15 Завершился iF")
+				//logger.Println("-BD:", url, data[:len(data)/10])
+				//logger.Println(recNum, num, "-15 Завершился iF")
 			} else {
-				logger.Println(recNum, num, "-16 URL не найден в БД, запросили http.Get")
+				//logger.Println(recNum, num, "-16 URL не найден в БД, запросили http.Get")
 				resp, err := http.Get(url) // получаем данные
 				utils.HandleError(err)
-				logger.Println(recNum, num, "-17 http.Get отработал")
+				//logger.Println(recNum, num, "-17 http.Get отработал")
 				//defer resp.Body.Close() // утилизируем ресурсы
 
-				logger.Println(recNum, num, "--18.1 Конвертируем данные от респонса")
+				//logger.Println(recNum, num, "--18.1 Конвертируем данные от респонса")
 				data := fmt.Sprint(resp) // преобразовали данные для отправки
 				go func() {
-					logger.Println(recNum, num, "--18.2 Запустили ГоПодпрограмму. Отправляем данные ch <-")
+					//logger.Println(recNum, num, "--18.2 Запустили ГоПодпрограмму. Отправляем данные ch <-")
 					ch <- data
 				}()
+				//logger.Println(recNum, num, "-19 go func() - Запущена")
 
-				logger.Println(recNum, num, "-19 go func() - Запущена")
-				logger.Println(recNum, num, "-TCP:", url, data[:len(data)/10])
+				//logger.Println(recNum, num, "-TCP:", url, data[:len(data)/10])
 
 				timeLife := utils.GetRandomTimeLife(*conf) //  получили случаейное время жизни в пределах заданных в конфиге
-				logger.Println(recNum, num, "-20 Получаем время жизни кэша:", timeLife)
-				logger.Println(recNum, num, "-21 Отправляем кэш в БД")
+				//logger.Println(recNum, num, "-20 Получаем время жизни кэша:", timeLife)
+				//logger.Println(recNum, num, "-21 Отправляем кэш в БД")
 				utils.ExecuteCommand("SETEX", url, timeLife, data) // положили данные в БД указали время жизни кэша
 				logger.Println(recNum, num, "-22 Завершился ELSE")
 			}
-			//wg1.Done()
-			defer waitGroup.Done()
-		}(chData, reply.N, i) // передали канал для получения данных ресурса
 
-		//wg1.Wait()
-		//logger.Println(i, "24 Дождались группу wg1")
+			//wg1.Done()
+			waitGroup.Done()
+		}(chData, reply.N, i) // передали канал для получения данных ресурса, номер клиента, и и порядковый новмер
+
 		data = <-chData
 		logger.Println(i, "25 Получили данные из <- chData")
-		//err := stream.Send(&pb.Reply{Data: data})
-		if err := stream.Send(&pb.Reply{Data: data}); err != nil {
-			return err
-		}
-		logger.Println(i, "26 Отправили данные в stream")
+		err := stream.Send(&pb.Reply{Data: data})
+		utils.HandleError(err)
+
+		//logger.Println(i, "26 Отправили данные в stream")
 		chReturnUrls <- url // ОЧЕНЬ важная штука
 		logger.Println(i, "27 ОЧЕНЬ важная штука отработала.")
 	}
@@ -131,13 +132,6 @@ func main() {
 
 	lis, err := net.Listen("tcp", address)
 	utils.HandleError(err)
-
-	//grpcServer := grpc.NewServer()
-	//pb.RegisterCacherServer(grpcServer, &server{})
-	//logger.Println("Register CacherServer success! matherHucker")
-	//if err := grpcServer.Serve(lis); err != nil {
-	//	logger.Fatalf("failed to serve: %v", err)
-	//}
 
 	grpcServer := grpc.NewServer()
 
