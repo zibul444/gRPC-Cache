@@ -3,8 +3,9 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/garyburd/redigo/redis"
 	"sync"
+
+	"github.com/garyburd/redigo/redis"
 
 	//"github.com/garyburd/redigo/redis"
 
@@ -20,8 +21,7 @@ import (
 )
 
 var (
-	dbConn  = NewPool().Get()
-	logger  = log.New(os.Stdout, fmt.Sprint(time.Now().Format(time.StampNano))+": ", log.Lshortfile)
+	dbPool  = NewPool()
 	muUtils = sync.Mutex{}
 )
 
@@ -29,7 +29,7 @@ var (
 func ReadFileConfig(filePath string) (fileContents string) {
 	f, err := os.Open(filePath)
 	if err != nil {
-		logger.Fatalln(err.Error())
+		log.Fatalln(err.Error())
 		os.Exit(1)
 	}
 	defer f.Close()
@@ -43,7 +43,6 @@ func ReadFileConfig(filePath string) (fileContents string) {
 		fileContents += string(buf[:n])
 	}
 
-	//logger.Println("Чтение конфига завершено")
 	return
 }
 
@@ -51,17 +50,16 @@ func ReadFileConfig(filePath string) (fileContents string) {
 func unmarshalConfig(marshal string) (config *Config) {
 	err := yaml.Unmarshal([]byte(marshal), &config)
 	HandleError(err)
-	//logger.Println("Конфиг жив(анмаршалинг завершен)")
+
 	return
 }
 
 // Для выполнения любых команд
 func ExecuteCommand(commandName string, args ...interface{}) interface{} {
-	//muUtils.Lock()
-	//defer muUtils.Unlock()
-	//logger.Printf("1 %s:%v\n", commandName, args)
+
+	dbConn := dbPool.Get()
+	defer dbConn.Close()
 	result, err := dbConn.Do(commandName, args...)
-	//logger.Printf("2 %s:%v\n", commandName, result)
 
 	HandleError(err)
 	return result
@@ -69,10 +67,9 @@ func ExecuteCommand(commandName string, args ...interface{}) interface{} {
 
 // Для выполнения команд "get string"
 func Execute(commandName string, args ...interface{}) string {
-	//muUtils.Lock()
-	//defer muUtils.Unlock()
+	dbConn := dbPool.Get()
+	defer dbConn.Close()
 	result, err := dbConn.Do(commandName, args...)
-	//logger.Println(fmt.Sprintf("Execute: %s", result))
 
 	HandleError(err)
 	return fmt.Sprintf("%s", result)

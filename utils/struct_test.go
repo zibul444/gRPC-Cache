@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 	"testing"
@@ -45,46 +46,36 @@ func TestGetConfig(t *testing.T) {
 }
 
 func TestConfig_TakeURL(t *testing.T) {
-	logger.Println("Start TestConfig_TakeURL")
+	log.Println("Start TestConfig_TakeURL")
 	n := length
 	var wgTest sync.WaitGroup
 	x := 0
-	//mu := new(sync.Mutex)
 
 	for i := 0; i < n; i++ {
-		wgTest.Add(1) // fixme может нужно будет поднять
+		wgTest.Add(1)
 		go func(number int) {
-			//logger.Println(number, "go func starting")
-			//for len(config.URLs) > 0 {
 			x++
-			logger.Println("count:", x)
-			//mu.Lock()
-			//go config.takeURL(ch) //, number)
+			log.Println("count:", x)
 			var url string
 			url = <-ChGetUrls
-			//logger.Println("url", url)
-			//ChReturnUrls <- url
 			buf = append(buf, url)
 
 			time.Sleep(50 * time.Millisecond) // даем поработать go takeURL
-			//mu.Unlock()
-			//}
 			wgTest.Done()
 		}(i)
 	}
 
-	logger.Println("wgTest.Wait()")
+	log.Println("wgTest.Wait()")
 	wgTest.Wait()
-	logger.Println("wgTest.Wait() - ended")
+	log.Println("wgTest.Wait() - ended")
 	if len(config.URLs) != 0 {
 		t.Fatal("len", len(config.URLs))
 	}
 	if len(buf) != length {
-		//logger.Println(buf)
 		t.Fatal("URLs:", len(config.URLs), "length:", length, "buf:", len(buf))
 	}
-	logger.Println("Source:", config.URLs)
-	logger.Println("Dest:", buf)
+	log.Println("Source:", config.URLs)
+	log.Println("Dest:", buf)
 }
 
 func TestCheckAvailabilityResources(t *testing.T) {
@@ -93,11 +84,6 @@ func TestCheckAvailabilityResources(t *testing.T) {
 		resp, err := http.Get(resource)
 		HandleError(err)
 		data = fmt.Sprint(resp)
-		logger.Println(resource, " - ", len(data), " - ", data) //data[:len(data)/15])
+		log.Println(resource, " - ", len(data), " - ", data)
 	}
 }
-
-//
-//func TestBenchmarcBD(t *testing.T) {
-//	t.Skip()
-//}

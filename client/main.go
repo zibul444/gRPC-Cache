@@ -2,88 +2,63 @@ package main
 
 import (
 	"context"
-	"fmt"
+	pb "gRPC-Cache/description"
 	"gRPC-Cache/utils"
 	"io"
 	"log"
-	"os"
 	"sync"
-	"time"
-
-	pb "gRPC-Cache/description"
 
 	"google.golang.org/grpc"
 )
 
 const (
 	address = "localhost:9999"
-	max     = 1000
+	max     = 10
 )
 
 var (
-	logger     = log.New(os.Stdout, fmt.Sprint(time.Now().Format(time.StampNano))+" : ", log.Lshortfile)
-	ch         = make(chan string, 2)
-	counter    = 0
 	wgConsumer sync.WaitGroup
 )
 
 func main() {
 	var opts []grpc.DialOption
-
 	opts = append(opts, grpc.WithInsecure())
 
-	conn, err := grpc.Dial(address, opts...)
-	utils.HandleError(err)
-	defer conn.Close()
-
-	client := pb.NewCacherClient(conn)
-
 	wgConsumer.Add(max)
-	for i := 0; i < max; i++ {
-		go func(client pb.CacherClient, request *pb.Request) {
+	for i := int32(1); i <= max; i++ {
+		go func(request *pb.Request) {
 			defer wgConsumer.Done()
-			logger.Println("Request started")
-			//ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+
+			conn, err := grpc.Dial(address, opts...)
+			utils.HandleError(err)
+			defer conn.Close()
+
+			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
+
+			client := pb.NewCacherClient(conn)
+
 			stream, err := client.GetRandomDataStream(ctx, request)
 			utils.HandleError(err)
+
 			for {
-				reply, err := stream.Recv()
+				//reply, err := stream.Recv()
+				_, err := stream.Recv()
 				if err == io.EOF {
 					break
 				}
 				utils.HandleError(err)
-				logger.Println(i, reply.Data[:len(reply.Data)/20]) // fixme никуда не выводить
 			}
-			counter++
-			//wgConsumer.Done()
-			ch <- "End: " + fmt.Sprint(counter)
-			time.Sleep(250 * time.Millisecond)
-		}(client, &pb.Request{N: int32(i)})
-
-		logger.Println("End For:", i)
+		}(&pb.Request{N: i})
 	}
-	logger.Println("For is end")
+	//go printerRoutine()
 
-	go printerRoutine()
-	logger.Println("wgConsumer")
 	wgConsumer.Wait()
-	logger.Println("wgConsumer.Done")
-	err = conn.Close()
-	utils.HandleError(err)
-
+	log.Println("wgConsumer.Done")
 }
 
-func printerRoutine() {
-	for w := range ch {
-		logger.Println(w)
-	}
-}
-
-//func printer() {
-//	for {
-//		logger.Println(<-ch)
-//		time.Sleep(time.Second * 1)
+//func printerRoutine() {
+//	for w := range ch {
+//		log.Println(w)
 //	}
 //}
