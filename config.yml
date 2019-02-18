@@ -1,7 +1,13 @@
 URLs:
-  - http://localhost:8000/l
-  - http://localhost:8800/
-  - http://localhost:6000/l
+  - https://golang.org
+  - https://www.google.com
+  - https://www.bbc.co.uk
+  - https://www.github.com
+  - https://www.gitlab.com
+  - https://www.duckduckgo.com
+  - https://www.atlassian.com
+  - https://www.twitter.com
+  - https://www.facebook.com
 MinTimeout: 10
 MaxTimeout: 100
 NumberOfRequests: 3

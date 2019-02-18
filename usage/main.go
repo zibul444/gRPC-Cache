@@ -2,23 +2,35 @@ package main
 
 import (
 	"context"
+	"gRPC-Cache/cache"
+	"gRPC-Cache/consumer"
 	pb "gRPC-Cache/description"
 	"gRPC-Cache/utils"
-	"google.golang.org/grpc"
 	"io"
 	"log"
+	"time"
+
+	"google.golang.org/grpc"
 )
 
 const (
 	address = "localhost:8888"
-	max     = 100
 )
 
 func main() {
-	runerConsumerClient()
+	go cache.StartServerCacher()
+	time.Sleep(time.Second)
+
+	go consumer.StartConsumerServer()
+	time.Sleep(time.Second)
+
+	runnerConsumerClient()
+
+	time.Sleep(time.Second)
+	log.Println("Done")
 }
 
-func runerConsumerClient() {
+func runnerConsumerClient() {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
 
@@ -41,6 +53,4 @@ func runerConsumerClient() {
 		}
 		utils.HandleError(err)
 	}
-
-	log.Println("wgConsumer.Done")
 }

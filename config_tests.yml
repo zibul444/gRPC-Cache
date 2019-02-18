@@ -1,0 +1,7 @@
+URLs:
+  - http://localhost:8000/l
+  - http://localhost:8800/
+  - http://localhost:6000/l
+MinTimeout: 10
+MaxTimeout: 100
+NumberOfRequests: 3

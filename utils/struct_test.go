@@ -4,17 +4,18 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"sync"
 	"testing"
 	"time"
 )
 
 var (
-	config       = GetConfig("../config.yml")
-	ChGetUrls    = config.ChGetUrls
-	ChReturnUrls = config.ChReturnUrls
-	length       = config.LenURLs()
-	buf          = make([]string, 0)
+	config    = GetConfig("../config.yml")
+	ChGetUrls = config.ChGetUrls
+
+	length = config.LenURLs()
+	buf    = make([]string, 0)
 )
 
 func TestGetConfig(t *testing.T) {
@@ -29,13 +30,13 @@ func TestGetConfig(t *testing.T) {
 	} else if config.NumberOfRequests <= 0 {
 		t.Fatal()
 	}
-	//FIXME
-	//re := regexp.MustCompile(`https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)`)
-	//for _, url := range config.URLs {
-	//	if re.FindAllStringSubmatch(url, -1) == nil {
-	//		t.Fatal()
-	//	}
-	//}
+
+	re := regexp.MustCompile(`https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)`)
+	for _, url := range config.URLs {
+		if re.FindAllStringSubmatch(url, -1) == nil {
+			t.Fatal()
+		}
+	}
 
 	instance2 := GetConfig("../config.yml")
 
@@ -49,13 +50,12 @@ func TestConfig_TakeURL(t *testing.T) {
 	log.Println("Start TestConfig_TakeURL")
 	n := length
 	var wgTest sync.WaitGroup
-	x := 0
 
 	for i := 0; i < n; i++ {
 		wgTest.Add(1)
 		go func(number int) {
-			x++
-			log.Println("count:", x)
+
+			log.Println("count:", number)
 			var url string
 			url = <-ChGetUrls
 			buf = append(buf, url)

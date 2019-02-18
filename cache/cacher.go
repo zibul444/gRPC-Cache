@@ -1,7 +1,6 @@
 //go:generate protoc -I ../description --go_out=plugins=grpc:../description ../description/descIDL.proto
-// ~/go/src % protoc --go_out=plugins=grpc:. gRPC-Cache/cacher/description/descIDL.proto
 
-package main
+package cache
 
 import (
 	"fmt"
@@ -41,7 +40,7 @@ func init() {
 }
 
 func (s *server) GetRandomDataStream(reply *pb.Request, stream pb.Cacher_GetRandomDataStreamServer) error {
-	log.Println("Received:", reply.N)
+	//log.Println("Received:", reply.N)
 	var (
 		waitGroup sync.WaitGroup
 		data      string
@@ -86,7 +85,7 @@ func sendStreamData(data string, stream pb.Cacher_GetRandomDataStreamServer) {
 
 // Получение данных от ресурса
 func getDataFromResource(url string) (dataResource string) {
-	log.Println("- 17. 1 GetDataFromResource url", url)
+	//log.Println("GetDataFromResource url", url)
 	resp, err := http.Get(url)
 	utils.HandleError(err)
 	defer resp.Body.Close()
@@ -99,15 +98,21 @@ func getDataFromResource(url string) (dataResource string) {
 func checkCashAlive(url string) (have bool) {
 	keys := utils.Execute("KEYS", url)
 
-	have = strings.Contains(keys, url)
+	have = checkCash(keys, url)
 
 	if have {
 		ttl := utils.ToInt64(utils.ExecuteCommand("TTL", url))
 		if ttl < 1 {
 			have = !have
-			log.Println("-14.1 Не успеваем взять КЭШ. TTL is:", ttl)
+			log.Println("Не успеваем взять КЭШ. TTL is:", ttl)
 		}
 	}
+	return have
+}
+
+// Проверка наличия КЭШа в БД
+func checkCash(keys string, url string) (have bool) {
+	have = strings.Contains(keys, url)
 	return have
 }
 
@@ -115,13 +120,13 @@ func checkCashAlive(url string) (have bool) {
 func StartServerCacher() {
 	lis, err := getListener()
 
-	grpcServer := RegisterCacherServer()
+	grpcServer := registerCacherServer()
 
 	err = grpcServer.Serve(lis)
 	utils.HandleError(err)
 }
 
-func RegisterCacherServer() *grpc.Server {
+func registerCacherServer() *grpc.Server {
 	grpcServer := grpc.NewServer()
 	pb.RegisterCacherServer(grpcServer, &server{})
 	log.Println("Register CacherServer success!")
@@ -132,12 +137,4 @@ func getListener() (net.Listener, error) {
 	lis, err := net.Listen("tcp", address)
 	utils.HandleError(err)
 	return lis, err
-}
-
-func main() {
-	//defer close(chUrl)
-	//defer close(chData)
-	//defer close(chReturnUrls)
-	StartServerCacher()
-
 }

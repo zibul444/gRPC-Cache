@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"log"
 	"sync"
 	"time"
 )
@@ -38,7 +37,7 @@ func (c *Config) takeURL() {
 			} else {
 				time.Sleep(n)
 				n = n + n
-				log.Println("takeURL Sleep", n)
+				//log.Println("takeURL Sleep", n)
 			}
 		}
 		c.ChGetUrls <- url
@@ -48,7 +47,7 @@ func (c *Config) takeURL() {
 // Возвращает свободные
 func (c *Config) returnURL() {
 	for {
-		log.Println("ReturnURL")
+
 		c.URLs = append(c.URLs, <-instance.ChReturnUrls)
 	}
 }

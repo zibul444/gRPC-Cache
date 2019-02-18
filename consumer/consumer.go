@@ -1,7 +1,6 @@
 //go:generate protoc -I ../description --go_out=plugins=grpc:../description ../description/descIDL.proto
-// ~/go/src % protoc --go_out=plugins=grpc:. gRPC-Cache/cacher/description/descIDL.proto
 
-package main
+package consumer
 
 import (
 	"context"
@@ -64,13 +63,13 @@ func (s *server) CacherRunner(reply *pb.Request, stream pb.Consumer_CacherRunner
 func StartConsumerServer() {
 	lis, err := getListener()
 
-	grpcServer := RegisterConsumerServer()
+	grpcServer := registerConsumerServer()
 
 	err = grpcServer.Serve(lis)
 	utils.HandleError(err)
 }
 
-func RegisterConsumerServer() *grpc.Server {
+func registerConsumerServer() *grpc.Server {
 	grpcServer := grpc.NewServer()
 	pb.RegisterConsumerServer(grpcServer, &server{})
 	log.Println("Register ConsumerServer success!")
@@ -81,9 +80,4 @@ func getListener() (net.Listener, error) {
 	lis, err := net.Listen("tcp", address)
 	utils.HandleError(err)
 	return lis, err
-}
-
-func main() {
-	StartConsumerServer()
-
 }
