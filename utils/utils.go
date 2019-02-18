@@ -7,9 +7,6 @@ import (
 
 	"github.com/garyburd/redigo/redis"
 
-	//"github.com/garyburd/redigo/redis"
-
-	//"github.com/garyburd/redigo/redis"
 	"io"
 	"log"
 	"math/rand"
