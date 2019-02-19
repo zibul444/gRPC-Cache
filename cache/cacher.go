@@ -12,6 +12,8 @@ import (
 	"strings"
 	"sync"
 
+	_ "expvar"
+
 	"google.golang.org/grpc"
 )
 

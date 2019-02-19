@@ -7,22 +7,23 @@ URLs:
   - https://www.duckduckgo.com
   - https://www.atlassian.com
   - https://www.facebook.com
-#  - https://www.twitter.com
-  - https://www.microsoft.com
-  - https://juliadates.com
-  - https://www.nato.int
-  - http://discovery-romance.com
-  - http://gitarre.ru
-  - https://www.ed.gov
-  - https://partner.edarling.ru
-  - https://minjust.ru
-  - https://partner.edarling.ru
-  - https://www.rosminzdrav.ru
-  - http://www.mkrf.ru
-  - https://www.mos.ru
-  - http://pereborom.ru
-  - http://www.calorizator.ru
-  - https://black-star.ru
-MinTimeout: 100
-MaxTimeout: 10000
+  - https://www.twitter.com
+#
+#  - https://www.microsoft.com
+#  - https://juliadates.com
+#  - https://www.nato.int
+#  - http://discovery-romance.com
+#  - http://gitarre.ru
+#  - https://www.ed.gov
+#  - https://partner.edarling.ru
+#  - https://minjust.ru
+#  - https://partner.edarling.ru
+#  - https://www.rosminzdrav.ru
+#  - http://www.mkrf.ru
+#  - https://www.mos.ru
+#  - http://pereborom.ru
+#  - http://www.calorizator.ru
+#  - https://black-star.ru
+MinTimeout: 10
+MaxTimeout: 100
 NumberOfRequests: 3

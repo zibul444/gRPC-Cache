@@ -11,6 +11,8 @@ import (
 	"net"
 	"sync"
 
+	_ "expvar"
+
 	"google.golang.org/grpc"
 )
 

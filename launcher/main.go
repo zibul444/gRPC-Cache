@@ -12,6 +12,8 @@ import (
 	"log"
 	"time"
 
+	_ "expvar"
+
 	"google.golang.org/grpc"
 )
 
