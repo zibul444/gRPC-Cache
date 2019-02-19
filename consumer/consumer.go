@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	address = "localhost:8888"
-	max     = 1000
+	address       = "localhost:8888"
+	addressCacher = "localhost:9999"
+	max           = 1000
 )
 
 type server struct {
@@ -24,15 +25,17 @@ type server struct {
 }
 
 func (s *server) CacherRunner(reply *pb.Request, stream pb.Consumer_CacherRunnerServer) error {
-	var opts []grpc.DialOption
+	var (
+		opts       []grpc.DialOption
+		wgConsumer sync.WaitGroup
+	)
 	opts = append(opts, grpc.WithInsecure())
-	var wgConsumer sync.WaitGroup
 	wgConsumer.Add(max)
 	for i := int32(1); i <= max; i++ {
 		go func(request *pb.Request) {
 			defer wgConsumer.Done()
 
-			conn, err := grpc.Dial("localhost:9999", opts...)
+			conn, err := grpc.Dial(addressCacher, opts...)
 			utils.HandleError(err)
 			defer conn.Close()
 

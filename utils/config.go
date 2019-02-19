@@ -46,13 +46,21 @@ func (c *Config) takeURL() {
 
 // Возвращает свободные
 func (c *Config) returnURL() {
-	for {
-		url, ok := <-instance.ChReturnUrls
-		if !ok {
-			break
-		}
-		c.URLs = append(c.URLs, url)
+	var wg sync.WaitGroup
+	for i := 0; i < 2; i++ {
+		wg.Add(1)
+		go func() {
+			for {
+				url, ok := <-instance.ChReturnUrls
+				if !ok {
+					wg.Done()
+					break
+				}
+				c.URLs = append(c.URLs, url)
+			}
+		}()
 	}
+	wg.Wait()
 }
 
 // Получить объект конфига
@@ -61,8 +69,8 @@ func GetConfig(configPath string) (config *Config) {
 		configString := ReadFileConfig(configPath)
 		instance = unmarshalConfig(configString)
 
-		instance.ChReturnUrls = make(chan string)
-		instance.ChGetUrls = make(chan string)
+		instance.ChReturnUrls = make(chan string, instance.LenURLs()/2)
+		instance.ChGetUrls = make(chan string, instance.LenURLs())
 		go instance.takeURL()
 		go instance.returnURL()
 	})
