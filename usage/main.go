@@ -1,3 +1,5 @@
+//go:generate protoc -I ../description --go_out=plugins=grpc:../description ../description/descIDL.proto
+
 package main
 
 import (
