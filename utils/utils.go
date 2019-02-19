@@ -3,7 +3,6 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"sync"
 
 	"github.com/garyburd/redigo/redis"
 
@@ -18,8 +17,7 @@ import (
 )
 
 var (
-	dbPool  = NewPool()
-	muUtils = sync.Mutex{}
+	dbPool = NewPool()
 )
 
 // Читаем файл по имени

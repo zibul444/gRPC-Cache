@@ -47,8 +47,11 @@ func (c *Config) takeURL() {
 // Возвращает свободные
 func (c *Config) returnURL() {
 	for {
-
-		c.URLs = append(c.URLs, <-instance.ChReturnUrls)
+		url, ok := <-instance.ChReturnUrls
+		if !ok {
+			break
+		}
+		c.URLs = append(c.URLs, url)
 	}
 }
 

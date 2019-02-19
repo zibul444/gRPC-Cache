@@ -49,22 +49,25 @@ func (s *server) GetRandomDataStream(reply *pb.Request, stream pb.Cacher_GetRand
 	waitGroup.Add(conf.NumberOfRequests)
 	for i := 0; i < conf.NumberOfRequests; i++ {
 		go func(chData chan<- string, recNum int32, num int) {
-			url2 := <-chUrl
-			ok := checkCashAlive(url2)
+			url, ok := <-chUrl
+			if !ok {
+				return
+			}
+			ok = checkCashAlive(url)
 
 			if ok {
-				chData <- utils.Execute("GET", url2)
+				chData <- utils.Execute("GET", url)
 			} else {
-				data := getDataFromResource(url2)
+				data := getDataFromResource(url)
 				go func() {
 					chData <- data
 				}()
 
 				timeLife := utils.GetRandomTimeLife(*conf)
-				utils.ExecuteCommand("SETEX", url2, timeLife, data)
+				utils.ExecuteCommand("SETEX", url, timeLife, data)
 			}
 
-			chReturnUrls <- url2 // ОЧЕНЬ важная штука(Вернуть URL)
+			chReturnUrls <- url // ОЧЕНЬ важная штука(Вернуть URL)
 			waitGroup.Done()
 		}(chData, reply.N, i) // передали канал для получения данных ресурса, номер клиента, и порядковый новмер
 
@@ -78,7 +81,10 @@ func (s *server) GetRandomDataStream(reply *pb.Request, stream pb.Cacher_GetRand
 }
 
 func sendStreamData(data string, stream pb.Cacher_GetRandomDataStreamServer) {
-	data = <-chData
+	data, ok := <-chData
+	if !ok {
+		return
+	}
 	err := stream.Send(&pb.Reply{Data: data})
 	utils.HandleError(err)
 }
