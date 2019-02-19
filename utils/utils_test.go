@@ -113,8 +113,8 @@ func TestExecute2(t *testing.T) {
 	log.Println("Kount", len(keysSlays))
 	log.Println("keysSlays:", keysSlays)
 
-	KEYS1 := Execute("KEYS", config.URLs[0])
-	t.Log("keys:", KEYS1)
+	//KEYS1 := Execute("KEYS", config.URLs[0])
+	//t.Log("keys:", KEYS1)
 }
 
 func TestExecute(t *testing.T) {
