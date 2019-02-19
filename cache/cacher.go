@@ -125,11 +125,11 @@ func checkCash(keys string, url string) (have bool) {
 // Запуск сервера
 func StartServerCacher() {
 	lis, err := getListener()
+	utils.HandleError(err)
 
 	grpcServer := registerCacherServer()
 
-	err = grpcServer.Serve(lis)
-	utils.HandleError(err)
+	go grpcServer.Serve(lis)
 }
 
 func registerCacherServer() *grpc.Server {
