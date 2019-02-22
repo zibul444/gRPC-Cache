@@ -25,7 +25,7 @@ const (
 var (
 	logger = logging.MustGetLogger("utils")
 	format = logging.MustStringFormatter(
-		`%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:04x}%{color:reset} %{message}`,
+		`%{color}%{time:15:04:05.0000} %{shortfunc} ▶ %{level:.4s} %{id:04x}%{color:reset} %{message}`,
 	)
 )
 
