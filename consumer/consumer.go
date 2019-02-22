@@ -6,8 +6,8 @@ import (
 	"context"
 	pb "gRPC-Cache/description"
 	"gRPC-Cache/utils"
+	"github.com/op/go-logging"
 	"io"
-	"log"
 	"net"
 	"sync"
 
@@ -25,6 +25,13 @@ const (
 type server struct {
 	reply []*string
 }
+
+var (
+	logger = logging.MustGetLogger("consumer")
+	format = logging.MustStringFormatter(
+		`%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:04x}%{color:reset} %{message}`,
+	)
+)
 
 func (s *server) CacherRunner(reply *pb.Request, stream pb.Consumer_CacherRunnerServer) error {
 	var (
@@ -59,7 +66,7 @@ func (s *server) CacherRunner(reply *pb.Request, stream pb.Consumer_CacherRunner
 		}(&pb.Request{N: i})
 	}
 	wgConsumer.Wait()
-	log.Println("wgConsumer.Done")
+	logger.Notice("wgConsumer.Done")
 
 	return nil
 }
@@ -77,7 +84,7 @@ func StartConsumerServer() {
 func registerConsumerServer() *grpc.Server {
 	grpcServer := grpc.NewServer()
 	pb.RegisterConsumerServer(grpcServer, &server{})
-	log.Println("Register ConsumerServer success!")
+	logger.Notice("Register ConsumerServer success!")
 	return grpcServer
 }
 

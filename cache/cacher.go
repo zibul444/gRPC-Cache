@@ -6,9 +6,10 @@ import (
 	"fmt"
 	pb "gRPC-Cache/description"
 	"gRPC-Cache/utils"
-	"log"
+	"github.com/op/go-logging"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 
@@ -23,6 +24,11 @@ const (
 
 var (
 	conf *utils.Config
+
+	logger = logging.MustGetLogger("cache")
+	format = logging.MustStringFormatter(
+		`%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:04x}%{color:reset} %{message}`,
+	)
 
 	chReturnUrls chan<- string
 	chUrl        <-chan string
@@ -39,10 +45,14 @@ func init() {
 
 	chUrl = conf.ChGetUrls
 	chReturnUrls = conf.ChReturnUrls
+
+	backend := logging.NewLogBackend(os.Stdout, "", 0)
+	backendFormatter := logging.NewBackendFormatter(backend, format)
+	logging.SetBackend(backendFormatter)
 }
 
 func (s *server) GetRandomDataStream(reply *pb.Request, stream pb.Cacher_GetRandomDataStreamServer) error {
-	//log.Println("Received:", reply.N)
+	//Logger.Notice("Received:", reply.N)
 	var (
 		waitGroup sync.WaitGroup
 		data      string
@@ -77,7 +87,7 @@ func (s *server) GetRandomDataStream(reply *pb.Request, stream pb.Cacher_GetRand
 	}
 
 	waitGroup.Wait()
-	log.Println("FOR is End", reply.N)
+	logger.Notice("FOR is End", reply.N)
 
 	return nil
 }
@@ -93,7 +103,7 @@ func sendStreamData(data string, stream pb.Cacher_GetRandomDataStreamServer) {
 
 // Получение данных от ресурса
 func getDataFromResource(url string) (dataResource string) {
-	//log.Println("GetDataFromResource url", url)
+	//Logger.Notice("GetDataFromResource url", url)
 	resp, err := http.Get(url)
 	utils.HandleError(err)
 	defer resp.Body.Close()
@@ -112,7 +122,7 @@ func checkCashAlive(url string) (have bool) {
 		ttl := utils.ToInt64(utils.ExecuteCommand("TTL", url))
 		if ttl < 1 {
 			have = !have
-			log.Println("Не успеваем взять КЭШ. TTL is:", ttl)
+			logger.Notice("Не успеваем взять КЭШ. TTL is:", ttl)
 		}
 	}
 	return have
@@ -137,7 +147,7 @@ func StartServerCacher() {
 func registerCacherServer() *grpc.Server {
 	grpcServer := grpc.NewServer()
 	pb.RegisterCacherServer(grpcServer, &server{})
-	log.Println("Register CacherServer success!")
+	logger.Notice("Register CacherServer success!")
 	return grpcServer
 }
 

@@ -3,9 +3,8 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-
 	"github.com/garyburd/redigo/redis"
-
+	"github.com/op/go-logging"
 	"io"
 	"log"
 	"math/rand"
@@ -18,9 +17,24 @@ import (
 
 var (
 	dbPool = NewPool()
+	Logger = logging.MustGetLogger("utils")
+	format = logging.MustStringFormatter(
+		`%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:04x}%{color:reset} %{message}`,
+	)
 )
 
-// Читаем файл по имени
+func init() {
+	backend := logging.NewLogBackend(os.Stdout, "", 0)
+	backendFormatter := logging.NewBackendFormatter(backend, format)
+	logging.SetBackend(backendFormatter)
+}
+
+type Secret string
+
+func (p Secret) Redacted() interface{} {
+	return logging.Redact(string(p))
+}
+
 func ReadFileConfig(filePath string) (fileContents string) {
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -41,7 +55,6 @@ func ReadFileConfig(filePath string) (fileContents string) {
 	return
 }
 
-// Десериализуем конфигурационный файл в объект resources.Config
 func unmarshalConfig(marshal string) (config *Config) {
 	err := yaml.Unmarshal([]byte(marshal), &config)
 	HandleError(err)
@@ -49,7 +62,6 @@ func unmarshalConfig(marshal string) (config *Config) {
 	return
 }
 
-// Для выполнения любых команд
 func ExecuteCommand(commandName string, args ...interface{}) interface{} {
 
 	dbConn := dbPool.Get()
@@ -72,7 +84,9 @@ func Execute(commandName string, args ...interface{}) string {
 
 func HandleError(err error) {
 	if err != nil {
-		panic(err)
+		Logger.Critical(err)
+		//debug.PrintStack()
+		os.Exit(3)
 	}
 }
 

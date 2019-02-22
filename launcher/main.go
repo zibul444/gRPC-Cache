@@ -8,8 +8,9 @@ import (
 	"gRPC-Cache/consumer"
 	pb "gRPC-Cache/description"
 	"gRPC-Cache/utils"
+	"github.com/op/go-logging"
 	"io"
-	"log"
+	"os"
 	"time"
 
 	_ "expvar"
@@ -21,17 +22,28 @@ const (
 	address = "localhost:8888"
 )
 
+var (
+	logger = logging.MustGetLogger("utils")
+	format = logging.MustStringFormatter(
+		`%{color}%{time:15:04:05.000} %{shortfunc} ▶ %{level:.4s} %{id:04x}%{color:reset} %{message}`,
+	)
+)
+
 func main() {
+	backend := logging.NewLogBackend(os.Stdout, "", 0)
+	backendFormatter := logging.NewBackendFormatter(backend, format)
+	logging.SetBackend(backendFormatter)
+
 	go cache.StartServerCacher()
-	time.Sleep(time.Second)
+	time.Sleep(400 * time.Millisecond)
 
 	go consumer.StartConsumerServer()
-	time.Sleep(time.Second)
+	time.Sleep(400 * time.Millisecond)
 
 	runnerConsumerClient()
 
-	time.Sleep(time.Second)
-	log.Println("Done")
+	time.Sleep(400 * time.Millisecond)
+	logger.Notice("Done")
 }
 
 func runnerConsumerClient() {

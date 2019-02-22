@@ -53,6 +53,19 @@ func TestExecuteCommand(t *testing.T) {
 	t.Logf("--- TTL %v, %v\n", TTL, ty)
 }
 
+func TestExecute2(t *testing.T) {
+	keys := Execute("KEYS", "*")
+	keys = keys[1 : len(keys)-1]
+
+	keysSlays := strings.Split(keys, " ")
+
+	Logger.Notice("Kount", len(keysSlays))
+	Logger.Notice("keysSlays:", keysSlays)
+
+	KEYS1 := Execute("KEYS", config.URLs[0])
+	t.Log("keys:", KEYS1)
+}
+
 func TestExecuteCommand2(t *testing.T) {
 	URLs := []string{
 		"https://www.microsoft.com",
@@ -97,24 +110,11 @@ func TestExecuteCommand2(t *testing.T) {
 
 	wgTest.Wait()
 	for i, url := range URLs {
-		log.Println(i, ExecuteCommand("TTL", url), url)
+		Logger.Notice(i, ExecuteCommand("TTL", url), url)
 	}
 
 	keys := Execute("KEYS", "*")
-	log.Println("Contains keys :", keys)
-}
-
-func TestExecute2(t *testing.T) {
-	keys := Execute("KEYS", "*")
-	keys = keys[1 : len(keys)-1]
-
-	keysSlays := strings.Split(keys, " ")
-
-	log.Println("Kount", len(keysSlays))
-	log.Println("keysSlays:", keysSlays)
-
-	//KEYS1 := Execute("KEYS", config.URLs[0])
-	//t.Log("keys:", KEYS1)
+	Logger.Notice("Contains keys :", keys)
 }
 
 func TestExecute(t *testing.T) {
@@ -129,7 +129,7 @@ func TestExecute(t *testing.T) {
 }
 
 func TestHTTPGet(t *testing.T) {
-	resp, err := http.Get("http://localhost:8000/l")
+	resp, err := http.Get("https://www.microsoft.com")
 	HandleError(err)
 
 	log.Printf("%v", resp)
