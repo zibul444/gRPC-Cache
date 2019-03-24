@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -26,9 +27,7 @@ var (
 	conf *utils.Config
 
 	logger = logging.MustGetLogger("cache")
-	format = logging.MustStringFormatter(
-		`%{color}%{time:15:04:05.0000} %{shortfunc} ▶ %{level:.4s} %{id:04x}%{color:reset} %{message}`,
-	)
+	format = utils.GetFormatter()
 
 	chReturnUrls chan<- string
 	chUrl        <-chan string
@@ -41,6 +40,7 @@ type server struct {
 }
 
 func init() {
+	filepath.Base()
 	conf = utils.GetConfig("config.yml") // получаем конфиг
 
 	chUrl = conf.ChGetUrls
@@ -52,7 +52,7 @@ func init() {
 }
 
 func (s *server) GetRandomDataStream(reply *pb.Request, stream pb.Cacher_GetRandomDataStreamServer) error {
-	//Logger.Notice("Received:", reply.N)
+	//logger.Notice("Received:", reply.N)
 	var (
 		waitGroup sync.WaitGroup
 		data      string
@@ -103,7 +103,7 @@ func sendStreamData(data string, stream pb.Cacher_GetRandomDataStreamServer) {
 
 // Получение данных от ресурса
 func getDataFromResource(url string) (dataResource string) {
-	//Logger.Notice("GetDataFromResource url", url)
+	//logger.Notice("GetDataFromResource url", url)
 	resp, err := http.Get(url)
 	utils.HandleError(err)
 	defer resp.Body.Close()

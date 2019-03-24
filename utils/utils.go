@@ -1,27 +1,31 @@
 package utils
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"github.com/op/go-logging"
+	"gopkg.in/yaml.v2"
 	"io"
 	"log"
 	"math/rand"
 	"os"
 	"strconv"
 	"time"
-
-	"gopkg.in/yaml.v2"
 )
 
 var (
 	dbPool = NewPool()
-	Logger = logging.MustGetLogger("utils")
-	format = logging.MustStringFormatter(
+	logger = logging.MustGetLogger("utils")
+	format = GetFormatter()
+)
+
+func GetFormatter() logging.Formatter {
+	return logging.MustStringFormatter(
 		`%{color}%{time:15:04:05.0000} %{shortfunc} ▶ %{level:.4s} %{id:04x}%{color:reset} %{message}`,
 	)
-)
+}
 
 func init() {
 	backend := logging.NewLogBackend(os.Stdout, "", 0)
@@ -43,14 +47,18 @@ func ReadFileConfig(filePath string) (fileContents string) {
 	}
 	defer f.Close()
 	buf := make([]byte, 32)
+	buffer := bytes.Buffer{}
 	for {
 		n, err := f.Read(buf)
 		if err == io.EOF { // если конец файла
 			break // выходим из цикла
 		}
 		HandleError(err)
-		fileContents += string(buf[:n])
+		//fileContents += string(buf[:n])
+		//buffer.Write(buf[:n])
+		fmt.Fprint(&buffer, buf[:n])
 	}
+	fileContents = buffer.String()
 
 	return
 }
@@ -77,14 +85,24 @@ func Execute(commandName string, args ...interface{}) string {
 	dbConn := dbPool.Get()
 	defer dbConn.Close()
 	result, err := dbConn.Do(commandName, args...)
-
 	HandleError(err)
+
+	//r := []rune(fmt.Sprint(result))
+	//logger.Debug("string(r):\t", string(r))
+
+	//raw, err := dbConn.Do(commandName, args...)
+	//
+	//for i, r := range string(raw) {
+	//	print(i, r)
+	//}
+
+	//return utf8.DecodeRuneInString(fmt.Sprint(result))
 	return fmt.Sprintf("%s", result)
 }
 
 func HandleError(err error) {
 	if err != nil {
-		Logger.Critical(err)
+		logger.Critical(err)
 		//debug.PrintStack()
 		os.Exit(3)
 	}
@@ -117,7 +135,7 @@ func GetRandomTimeLife(config Config) (timeLife int) {
 	return GetRandom(min, max)
 }
 
-//func GetLogger() (stdLogger *log.Logger) {
+//func GetLogger() (stdLogger *log.logger) {
 //	stdLogger = log.New(os.Stdout, fmt.Sprint(time.Now().Format(time.StampNano)) + " INFO: ", log.Lshortfile)
 //	return stdLogger
 //}

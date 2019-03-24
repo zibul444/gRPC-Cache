@@ -59,8 +59,8 @@ func TestExecute2(t *testing.T) {
 
 	keysSlays := strings.Split(keys, " ")
 
-	Logger.Notice("Kount", len(keysSlays))
-	Logger.Notice("keysSlays:", keysSlays)
+	logger.Notice("Kount", len(keysSlays))
+	logger.Notice("keysSlays:", keysSlays)
 
 	KEYS1 := Execute("KEYS", config.URLs[0])
 	t.Log("keys:", KEYS1)
@@ -110,11 +110,11 @@ func TestExecuteCommand2(t *testing.T) {
 
 	wgTest.Wait()
 	for i, url := range URLs {
-		Logger.Notice(i, ExecuteCommand("TTL", url), url)
+		logger.Notice(i, ExecuteCommand("TTL", url), url)
 	}
 
 	keys := Execute("KEYS", "*")
-	Logger.Notice("Contains keys :", keys)
+	logger.Notice("Contains keys :", keys)
 }
 
 func TestExecute(t *testing.T) {
